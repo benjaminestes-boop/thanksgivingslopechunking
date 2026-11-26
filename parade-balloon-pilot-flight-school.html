@@ -1,0 +1,816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Parade Balloon Pilot: Flight School</title>
+<meta name="description" content="Parade Balloon Pilot: a Thanksgiving slope game. Type the slope that carries the parade balloon to each gate.">
+<meta name="theme-color" content="#B9562C">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23EAF3FB'/%3E%3Ccircle cx='16' cy='15' r='8' fill='%238A5A3B'/%3E%3Cpath d='M16 23v6' stroke='%231E2433' stroke-width='2'/%3E%3C/svg%3E">
+<style>
+:root{
+  --skyTop:#DCEBF8; --skyBot:#FFF3E2; --panel:#FFFFFF; --ink:#1E2433; --muted:#4F5870; --line:#CCD5E3; --grid:rgba(30,36,51,.10); --axis:#5A6478;
+  --far:#C9D4E3; --bld:#5D6880; --bld2:#7A5A4C; --win:#F3D78A; --steel:#6C7488; --street:#8D95A6;
+  --gold:#C98A12; --goldsoft:#FFF2D2; --rise:#C62E3A; --run:#2462C9; --ok:#1C7A3E; --oksoft:#E3F4E8; --bad:#B42330; --badsoft:#FCE6E8;
+  --accent:#B9562C; --btn:#1E2433; --btntext:#FFFFFF; --soft:#F2F5FA;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --skyTop:#1A2340; --skyBot:#3A2E3A; --panel:#171D2C; --ink:#EEF2F8; --muted:#B0BACB; --line:#344057; --grid:rgba(238,242,248,.10); --axis:#AEB8CA;
+    --far:#2A3450; --bld:#3E4A66; --bld2:#5B4339; --win:#F3D78A; --steel:#8790A6; --street:#4A5266;
+    --gold:#F1BE52; --goldsoft:#3A3118; --rise:#FF7A85; --run:#76A7FF; --ok:#62D38D; --oksoft:#16351F; --bad:#FF7A85; --badsoft:#3E1E26;
+    --accent:#F08A5D; --btn:#EEF2F8; --btntext:#171D2C; --soft:#1F2638;
+    color-scheme:dark;
+  }
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--panel);color:var(--ink);font-family:"Segoe UI",Roboto,"Helvetica Neue",Arial,"DejaVu Sans",sans-serif;font-size:16px;line-height:1.45}
+button,input{font:inherit;color:inherit}
+:focus-visible{outline:3px solid var(--run);outline-offset:2px}
+.app{position:relative;max-width:900px;height:100vh;max-height:900px;margin:0 auto;display:flex;flex-direction:column;overflow:hidden;background:var(--panel)}
+/* top bar */
+.top{flex:0 0 auto;padding:6px 12px 6px;border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:4px}
+.r1{display:flex;align-items:center;gap:10px}
+.brand{font-weight:800;font-size:1.2rem;letter-spacing:-.02em;color:var(--accent);white-space:nowrap}
+.tools{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+.tbtn{background:var(--panel);border:1px solid var(--line);border-radius:8px;padding:4px 10px;min-height:34px;cursor:pointer;font-size:.86rem;white-space:nowrap}
+.tbtn:hover{border-color:var(--ink)}
+.r2{display:flex;align-items:center;gap:18px;font-size:.92rem;flex-wrap:wrap}
+.r2 b{font-variant-numeric:tabular-nums}
+.tanks{display:inline-flex;gap:4px;vertical-align:middle}
+.tanks svg{display:block}
+/* course */
+.course{flex:0 0 auto;padding:6px 10px 0}
+svg.map{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:10px;background:var(--skyBot)}
+.g-grid{stroke:var(--grid);stroke-width:1}
+.g-axis{stroke:var(--axis);stroke-width:1.5}
+.g-tick{fill:var(--muted);font:600 10.5px "Segoe UI",Roboto,Arial,sans-serif}
+.far{fill:var(--far);opacity:.45}
+.bld{fill:var(--bld);stroke:rgba(0,0,0,.25);stroke-width:1}
+.bld.b2{fill:var(--bld2)}
+.steel{fill:var(--steel);stroke:rgba(0,0,0,.3);stroke-width:1}
+.banner{fill:var(--accent);opacity:.9}
+.street{fill:var(--street)}
+.lane{stroke:#F3D78A;stroke-width:3;stroke-dasharray:14 12}
+.gate{fill:none;stroke:var(--gold);stroke-width:5}
+.gate.cur{stroke-width:6}
+.gate.done{stroke:var(--ok);opacity:.65}
+.gnum{font:800 12px "Segoe UI",Roboto,Arial,sans-serif;fill:var(--ink);paint-order:stroke;stroke:var(--skyBot);stroke-width:3px}
+.trail{stroke:var(--ok);stroke-width:2.5;stroke-dasharray:3 5;fill:none;opacity:.8}
+.miss{stroke:var(--bad);stroke-width:2.5;stroke-dasharray:6 5;fill:none;opacity:.85}
+.boom{fill:var(--bad)}
+.rr{stroke:var(--rise);stroke-width:4}
+.ru{stroke:var(--run);stroke-width:4;stroke-dasharray:7 4}
+.lab{font:800 13px "Segoe UI",Roboto,Arial,sans-serif;paint-order:stroke;stroke:var(--skyBot);stroke-width:4px}
+.lab.r{fill:var(--rise)} .lab.u{fill:var(--run)} .lab.x{fill:var(--bad)}
+.bob{animation:bob 2.4s ease-in-out infinite}
+@keyframes bob{50%{transform:translateY(-3px)}}
+/* answer panel */
+.panelrow{flex:1 1 auto;min-height:0;display:grid;grid-template-columns:1fr 300px;gap:12px;padding:8px 10px 6px}
+.qbox{min-height:0;overflow:auto;border:1px solid var(--line);border-radius:10px;padding:10px 12px;background:var(--panel)}
+.qtitle{font-weight:800;margin:0 0 4px}
+.qtext{margin:0 0 6px}
+.pts{font-size:1.25rem;font-weight:800;margin:2px 0 6px}
+.pts small{display:block;font-size:.8rem;font-weight:600;color:var(--muted)}
+table.xy{border-collapse:collapse;font-size:.95rem;margin:2px 0 4px}
+table.xy th,table.xy td{border:1.5px solid var(--ink);padding:2px 12px;text-align:center}
+table.xy th{background:var(--soft);font-size:.85rem}
+table.xy td.nm{font-size:.8rem;color:var(--muted);text-align:left;font-weight:600}
+table.xy tr.hl td{background:var(--goldsoft);font-weight:800}
+.fb{border-radius:8px;padding:7px 10px;margin-top:6px;border:2px solid var(--line);background:var(--soft);font-size:.95rem}
+.fb:empty{display:none}
+.fb.ok{border-color:var(--ok);background:var(--oksoft)}
+.fb.no{border-color:var(--bad);background:var(--badsoft)}
+.fb .tag{font-weight:800}
+.fb ol{margin:4px 0 2px;padding-left:1.3em}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;line-height:1.1;margin:0 .15em}
+.frac>span:first-child{border-bottom:2px solid currentColor;padding:0 .2em}
+.frac>span:last-child{padding:0 .2em}
+.pad{display:flex;flex-direction:column;gap:6px}
+.inrow{display:flex;align-items:center;gap:8px}
+.inrow label{font-weight:800;font-size:1.1rem}
+.inrow input{flex:1;min-width:0;border:2px solid var(--line);border-radius:8px;padding:6px 10px;font-size:1.2rem;min-height:44px;background:var(--panel)}
+.inrow input:focus{border-color:var(--gold);outline:none}
+.keys{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.key{min-height:42px;border:1.5px solid var(--line);border-radius:8px;background:var(--soft);font-weight:700;font-size:1.05rem;cursor:pointer;touch-action:manipulation}
+.key:hover{border-color:var(--ink)}
+.key.wide{grid-column:span 2;font-size:.95rem}
+.key.fly{background:var(--accent);border-color:var(--accent);color:#FFFFFF}
+.key:disabled{opacity:.45;cursor:default}
+.foot{flex:0 0 auto;text-align:center;font-size:.72rem;color:var(--muted);padding:2px 8px 4px}
+/* overlays */
+.ov{position:absolute;inset:0;z-index:10;display:flex;align-items:center;justify-content:center;background:rgba(20,24,36,.55);padding:14px}
+.hidden{display:none!important}
+.box{background:var(--panel);border-radius:14px;box-shadow:0 18px 50px rgba(0,0,0,.35);width:min(660px,100%);max-height:100%;overflow:auto;padding:20px 24px}
+.box h1{margin:0 0 4px;font-size:2.3rem;letter-spacing:-.03em;line-height:1.05;color:var(--accent)}
+.box h2{margin:0 0 8px;font-size:1.4rem}
+.box p{margin:0 0 8px}
+.box ol{margin:4px 0 10px;padding-left:1.4em}
+.box li{margin-bottom:5px}
+kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 5px;font-family:inherit;font-size:.9em;background:var(--soft)}
+.btn{background:var(--btn);color:var(--btntext);border:2px solid var(--btn);border-radius:10px;padding:9px 20px;min-height:46px;font-weight:700;cursor:pointer}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:10px}
+.stars{display:inline-flex;gap:4px;vertical-align:middle}
+.big{font-size:2.4rem;font-weight:800;letter-spacing:-.03em;line-height:1}
+.field{display:flex;align-items:center;gap:8px;margin:6px 0}
+.field input{border:2px solid var(--line);border-radius:8px;padding:6px 10px;min-height:42px;width:16em;background:var(--panel)}
+table.sum{border-collapse:collapse;width:100%;font-size:.88rem}
+table.sum th,table.sum td{border-bottom:1px solid var(--line);padding:4px 8px;text-align:left;vertical-align:middle}
+.scroll{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.mini svg{width:100%;height:auto}
+@media (max-width:700px){
+  .app{height:auto;max-height:none;overflow:visible}
+  .panelrow{grid-template-columns:1fr}
+  .r2{gap:10px}
+}
+@media (prefers-reduced-motion:reduce){.bob{animation:none}}
+@media print{.top,.course,.panelrow,.foot{display:none}.ov{position:static;background:none;padding:0}.box{box-shadow:none;max-height:none}.noprint{display:none!important}.scroll{max-height:none}}
+/* flight school */
+.brand .fs{font-weight:700;font-size:.85rem;color:var(--ink);background:var(--goldsoft);border:1px solid var(--gold);border-radius:999px;padding:1px 9px;margin-left:4px;vertical-align:middle}
+#hHelium.dim{opacity:.4}
+ol.stepper{list-style:none;margin:0 0 8px;padding:0;display:flex;flex-wrap:wrap;gap:6px}
+ol.stepper li{font-size:.8rem;border:1px solid var(--line);border-radius:999px;padding:1px 10px;color:var(--muted)}
+ol.stepper li.done{border-color:var(--ok);color:var(--ok)}
+ol.stepper li.now{border-color:var(--accent);background:var(--accent);color:#FFFFFF;font-weight:700}
+.learn p{margin:0 0 7px}
+.learn .key{font-weight:800;font-size:1.05rem;background:var(--goldsoft);border:1px solid var(--gold);border-radius:8px;padding:6px 10px;display:inline-block}
+.rc{color:var(--rise);font-weight:800}.uc{color:var(--run);font-weight:800}
+ol.wsteps{margin:4px 0 0;padding-left:1.4em}
+ol.wsteps li{margin-bottom:4px}
+.fields{display:flex;flex-direction:column;gap:6px}
+.fields .inrow label{font-weight:700;font-size:.95rem;flex:0 0 8.6em;line-height:1.15}
+.fields .inrow label small{font-weight:500;color:var(--muted);font-size:.78rem}
+.fields .inrow input{font-size:1.1rem;min-height:40px}
+.fields .inrow.act input{border-color:var(--gold);background:var(--goldsoft)}
+.fields .inrow.ok input{border-color:var(--ok);background:var(--oksoft)}
+.fields .inrow input:disabled{opacity:.5}
+.fields .st{width:1.2em;font-weight:800;color:var(--ok)}
+.padnote{margin:0;font-size:.9rem;color:var(--muted);border:1px dashed var(--line);border-radius:8px;padding:8px 10px}
+ol.chunks{list-style:none;margin:6px 0;padding:0;display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.chunkbtn{width:100%;text-align:left;background:var(--soft);border:1px solid var(--line);border-radius:8px;padding:6px 10px;cursor:pointer;min-height:44px;display:flex;flex-direction:column}
+.chunkbtn:hover{border-color:var(--accent)}
+.chunkbtn span{font-size:.8rem;color:var(--muted)}
+.muted{color:var(--muted)}
+@media (max-width:600px){ol.chunks{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<div class="app" id="app">
+  <header class="top">
+    <div class="r1">
+      <div class="brand">Parade Balloon Pilot <span class="fs">Flight School</span></div>
+      <div class="tools">
+        <button type="button" class="tbtn" id="bHelp">How to play</button>
+        <button type="button" class="tbtn" id="bMusic" aria-pressed="false">Music: off</button>
+        <button type="button" class="tbtn" id="bSound" aria-pressed="false">Sound: off</button>
+        <button type="button" class="tbtn" id="bPause">Pause</button>
+      </div>
+    </div>
+    <div class="r2" aria-live="polite">
+      <span id="hRoute">Section 1 of 6: Rise and Run</span>
+      <span id="hGate">Gate 1 of 5</span>
+      <span id="hHelium">Helium <span class="tanks" id="hTanks" role="img" aria-label="3 tanks"></span></span>
+      <span>Score <b id="hScore">0</b></span>
+    </div>
+  </header>
+  <div class="course"><svg class="map" id="map" viewBox="0 0 780 408" role="img" aria-label="Parade course"></svg></div>
+  <div class="panelrow">
+    <section class="qbox" id="qbox" aria-live="polite"></section>
+    <section class="pad" aria-label="Answer">
+      <div id="fields" class="fields"></div>
+      <div class="keys" id="keys"></div>
+    </section>
+  </div>
+  <div class="foot">Learning activity created by B.Estes assisted with AI, used with permission.</div>
+  <div class="ov hidden" id="ov" role="dialog" aria-modal="true" aria-labelledby="ovT"><div class="box" id="box"></div></div>
+</div>
+<script>
+(function(){
+"use strict";
+/* ---------- helpers ---------- */
+var NS="http://www.w3.org/2000/svg";
+function $(s){return document.querySelector(s);}
+function S(tag,attrs,parent){var e=document.createElementNS(NS,tag);if(attrs)for(var k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function ri(a,b){return a+Math.floor(Math.random()*(b-a+1));}
+function pick(a){return a[Math.floor(Math.random()*a.length)];}
+function shuffle(a){a=a.slice();for(var i=a.length-1;i>0;i--){var j=Math.floor(Math.random()*(i+1));var t=a[i];a[i]=a[j];a[j]=t;}return a;}
+function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=a%b;a=b;b=t;}return a||1;}
+function reduce(n,d){if(d===0)return{undef:true};if(d<0){n=-n;d=-d;}var g=gcd(n,d);return{n:n/g,d:d/g};}
+function same(a,b){if(!a||!b)return false;if(a.undef||b.undef)return !!a.undef&&!!b.undef;return a.n===b.n&&a.d===b.d;}
+function mn(n){return n<0?"\u2212"+(-n):String(n);}
+function paren(n){return n<0?"("+mn(n)+")":mn(n);}
+function pt(p){return "("+mn(p.x)+", "+mn(p.y)+")";}
+function frac(a,b){return '<span class="frac"><span>'+a+'</span><span>'+b+'</span></span>';}
+function sH(s){if(s.undef)return "undefined";if(s.d===1)return mn(s.n);return frac(mn(s.n),s.d);}
+function sT(s){if(s.undef)return "undefined";return s.d===1?mn(s.n):mn(s.n)+"/"+s.d;}
+function mExpr(r,u){var c=reduce(r,u);if(c.undef)return frac(mn(r),"0")+" \u2192 undefined";var s=frac(mn(r),mn(u));if(c.n!==r||c.d!==u||c.d===1)s+=" = "+sH(c);return s;}
+function parseAns(str){
+  var t=String(str||"").toLowerCase().replace(/[\u2212\u2013\u2014]/g,"-").replace(/\s+/g,"").replace(/^m=/,"");
+  if(!t)return null;
+  if(/^(undef|und|dne|noslope|none)/.test(t))return{undef:true};
+  var m=t.match(/^(-?\d+)\/(-?\d+)$/);if(m)return reduce(+m[1],+m[2]);
+  if(/^-?(\d+\.?\d*|\.\d+)$/.test(t))return reduce(Math.round(parseFloat(t)*1000),1000);
+  return null;
+}
+var reduceMotion=window.matchMedia&&window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- course geometry ---------- */
+var XMAX=20,YMAX=10,U=36,OX=40,OY=12;
+function X(x){return OX+x*U;}
+function Y(y){return OY+(YMAX-y)*U;}
+var SLOPES=[[1,1],[2,1],[3,1],[1,2],[1,3],[2,3],[3,2]];
+function inRect(p,r,m){return p.x>r.x1-m&&p.x<r.x2+m&&p.y>r.y1-m&&p.y<r.y2+m;}
+function segPoints(a,b,step){var out=[],d=Math.hypot(b.x-a.x,b.y-a.y),n=Math.max(1,Math.ceil(d/step));for(var i=0;i<=n;i++)out.push({x:a.x+(b.x-a.x)*i/n,y:a.y+(b.y-a.y)*i/n});return out;}
+function buildObstacles(level,segs){
+  var obs=[],clr=level>=5?0.9:1.4;
+  segs.forEach(function(sg,i){
+    var A=sg.a,B=sg.b;
+    if(sg.type==="zero"){
+      var y=A.y,x1=A.x+0.5,x2=B.x-0.5;
+      obs.push({x1:x1,x2:x2,y1:y+0.85,y2:y+1.3,k:"steel",need:true});
+      obs.push({x1:x1,x2:x1+0.3,y1:y+1.3,y2:YMAX,k:"steel"});
+      obs.push({x1:x2-0.3,x2:x2,y1:y+1.3,y2:YMAX,k:"steel"});
+      if(y-0.9>=0.8)obs.push({x1:A.x+0.8,x2:B.x-0.8,y1:0,y2:y-0.9,k:"bld",need:true});
+    }else if(sg.type==="undef"){
+      obs.push({x1:A.x+0.7,x2:A.x+2.1,y1:0,y2:B.y-0.85,k:"bld b2",need:true,windows:true});
+    }else{
+      var lo=Math.min(A.y,B.y),hi=Math.max(A.y,B.y),mx1=A.x+0.4,mx2=B.x-0.4;
+      if(mx2-mx1>=0.9){
+        var top=lo-clr;if(top>=1)obs.push({x1:mx1,x2:mx2,y1:0,y2:top,k:"bld",windows:true});
+        if(level>=5){var b=hi+clr;if(b<=9.2)obs.push({x1:(A.x+B.x)/2-0.4,x2:(A.x+B.x)/2+0.4,y1:b,y2:YMAX,k:"banner"});}
+      }
+    }
+  });
+  // keep the correct path clear of everything
+  var path=[];segs.forEach(function(sg){path=path.concat(segPoints(sg.a,sg.b,0.05));});
+  for(var j=obs.length-1;j>=0;j--){
+    var hit=path.some(function(p){return inRect(p,obs[j],0.45);});
+    if(hit){if(obs[j].need)return null;obs.splice(j,1);}
+  }
+  // every gate must sit clear too
+  return obs;
+}
+function decor(){var d=[],x=0;while(x<XMAX){var w=ri(1,2)+Math.random(),h=2+Math.random()*5;d.push({x1:x,x2:Math.min(XMAX,x+w),h:h});x+=w+0.3;}return d;}
+
+/* ---------- drawing ---------- */
+var map=$("#map"),layers={};
+function rectEl(r,cls,parent){return S("rect",{x:X(r.x1),y:Y(r.y2),width:(r.x2-r.x1)*U,height:(r.y2-r.y1)*U,class:cls},parent);}
+function drawMap(){
+  map.innerHTML="";
+  var defs=S("defs",{},map);
+  var lg=S("linearGradient",{id:"sky",x1:"0",y1:"0",x2:"0",y2:"1"},defs);
+  S("stop",{offset:"0","stop-color":"var(--skyTop)"},lg);S("stop",{offset:"1","stop-color":"var(--skyBot)"},lg);
+  var pat=S("pattern",{id:"wins",width:"12",height:"14",patternUnits:"userSpaceOnUse"},defs);
+  S("rect",{x:"3",y:"3",width:"5",height:"6",fill:"var(--win)",opacity:".75"},pat);
+  ["mr","mu"].forEach(function(id,i){var m=S("marker",{id:id,viewBox:"0 0 10 10",refX:"6",refY:"5",markerWidth:"4",markerHeight:"4",orient:"auto"},defs);S("path",{d:"M0,0 L10,5 L0,10 z",fill:i?"var(--run)":"var(--rise)"},m);});
+  S("rect",{x:0,y:0,width:780,height:408,fill:"url(#sky)"},map);
+  var far=S("g",{"aria-hidden":"true"},map);
+  R.decor.forEach(function(d){S("rect",{x:X(d.x1),y:Y(d.h),width:(d.x2-d.x1)*U,height:d.h*U,class:"far"},far);});
+  var gg=S("g",{"aria-hidden":"true"},map);
+  for(var x=0;x<=XMAX;x++)S("line",{x1:X(x),y1:Y(0),x2:X(x),y2:Y(YMAX),class:"g-grid"},gg);
+  for(var y=0;y<=YMAX;y++)S("line",{x1:X(0),y1:Y(y),x2:X(XMAX),y2:Y(y),class:"g-grid"},gg);
+  S("rect",{x:X(0),y:Y(0),width:XMAX*U,height:408-Y(0),class:"street"},map);
+  S("line",{x1:X(0),y1:Y(0)+18,x2:X(XMAX),y2:Y(0)+18,class:"lane"},map);
+  var ob=S("g",{},map);
+  R.obs.forEach(function(r){var e=rectEl(r,r.k,ob);if(r.windows&&(r.x2-r.x1)*U>14){rectEl(r,"",ob).setAttribute("fill","url(#wins)");}});
+  S("line",{x1:X(0),y1:Y(0),x2:X(XMAX),y2:Y(0),class:"g-axis"},map);
+  S("line",{x1:X(0),y1:Y(0),x2:X(0),y2:Y(YMAX),class:"g-axis"},map);
+  var tk=S("g",{"aria-hidden":"true"},map);
+  for(x=0;x<=XMAX;x+=2){var t=S("text",{x:X(x),y:Y(0)+34,class:"g-tick","text-anchor":"middle"},tk);t.textContent=x;}
+  for(y=0;y<=YMAX;y+=2){t=S("text",{x:X(0)-8,y:Y(y)+4,class:"g-tick","text-anchor":"end"},tk);t.textContent=y;}
+  layers.trail=S("g",{},map);layers.gates=S("g",{},map);layers.miss=S("g",{},map);
+  layers.balloon=S("g",{},map);layers.help=S("g",{},map);
+  drawGates();drawBalloon();placeBalloon(R.pts[G.gate]);
+}
+function drawGates(){
+  var g=layers.gates;g.innerHTML="";
+  for(var i=1;i<R.pts.length;i++){
+    var p=R.pts[i],cls="gate"+(i-1<G.gate?" done":i-1===G.gate?" cur":"");
+    S("ellipse",{cx:X(p.x),cy:Y(p.y),rx:13,ry:19,class:cls},g);
+    if(i-1<G.gate){var c=S("text",{x:X(p.x),y:Y(p.y)+5,class:"gnum","text-anchor":"middle"},g);c.textContent="\u2713";continue;}
+    if(i-1===G.gate){var t=S("text",{x:X(p.x),y:Y(p.y)-25,class:"gnum","text-anchor":"middle"},g);t.textContent="Gate "+i;}
+    else{var n=S("text",{x:X(p.x),y:Y(p.y)+4.5,class:"gnum","text-anchor":"middle"},g);n.textContent=i;}
+  }
+  var tr=layers.trail;tr.innerHTML="";
+  if(G.gate>0){var d="M"+X(R.pts[0].x)+","+Y(R.pts[0].y);for(i=1;i<=G.gate;i++)d+=" L"+X(R.pts[i].x)+","+Y(R.pts[i].y);S("path",{d:d,class:"trail"},tr);}
+}
+var bal=null;
+function drawBalloon(){
+  var g=layers.balloon;g.innerHTML="";
+  var outer=S("g",{},g),inner=S("g",{class:reduceMotion?"":"bob"},outer);
+  S("line",{x1:-6,y1:14,x2:-12,y2:44,stroke:"var(--ink)","stroke-width":"1.2",opacity:".6"},inner);
+  S("line",{x1:6,y1:14,x2:12,y2:44,stroke:"var(--ink)","stroke-width":"1.2",opacity:".6"},inner);
+  var cols=["#C8452B","#E8833A","#E6B422","#E8833A","#C8452B"];
+  for(var i=0;i<5;i++){var a=-150+i*30;S("ellipse",{cx:0,cy:-18,rx:7,ry:17,fill:cols[i],stroke:"rgba(0,0,0,.25)","stroke-width":"1",transform:"rotate("+(a+90)+" 0 0) translate(0 0)"},inner);}
+  S("circle",{cx:0,cy:2,r:15,fill:"#8A5A3B",stroke:"rgba(0,0,0,.3)","stroke-width":"1"},inner);
+  S("ellipse",{cx:-3,cy:6,rx:8,ry:6,fill:"#A97452"},inner);
+  S("circle",{cx:12,cy:-10,r:8,fill:"#A0704D",stroke:"rgba(0,0,0,.3)","stroke-width":"1"},inner);
+  S("circle",{cx:14,cy:-12,r:2.2,fill:"#FFFFFF"},inner);S("circle",{cx:14.6,cy:-12,r:1.1,fill:"#1E2433"},inner);
+  S("path",{d:"M19,-10 L26,-8 L19,-6 z",fill:"#E6B422"},inner);
+  S("ellipse",{cx:19,cy:-3,rx:2,ry:3.5,fill:"#C8452B"},inner);
+  bal=outer;
+}
+function placeBalloon(p){if(bal)bal.setAttribute("transform","translate("+X(p.x)+","+Y(p.y)+")");G.bp={x:p.x,y:p.y};}
+function animate(from,to,cb){
+  var d=Math.hypot(to.x-from.x,to.y-from.y),dur=reduceMotion?0:Math.max(450,d*230),t0=null;
+  if(!dur){placeBalloon(to);setTimeout(cb,60);return;}
+  function step(ts){if(!t0)t0=ts;var k=Math.min(1,(ts-t0)/dur),e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    placeBalloon({x:from.x+(to.x-from.x)*e,y:from.y+(to.y-from.y)*e});if(k<1)requestAnimationFrame(step);else cb();}
+  requestAnimationFrame(step);
+}
+function drawRiseRun(A,B){
+  var g=layers.help;g.innerHTML="";var r=B.y-A.y,u=B.x-A.x,C={x:A.x,y:B.y};
+  if(r!==0){S("line",{x1:X(A.x),y1:Y(A.y),x2:X(C.x),y2:Y(C.y)+(r>0?6:-6),class:"rr","marker-end":"url(#mr)"},g);
+    var t=S("text",{x:X(A.x)-8,y:(Y(A.y)+Y(C.y))/2+4,class:"lab r","text-anchor":"end"},g);t.textContent="rise "+mn(r);}
+  if(u!==0){S("line",{x1:X(C.x),y1:Y(C.y),x2:X(B.x)-6,y2:Y(B.y),class:"ru","marker-end":"url(#mu)"},g);
+    t=S("text",{x:(X(C.x)+X(B.x))/2,y:Y(C.y)+(r>=0?-10:20),class:"lab u","text-anchor":"middle"},g);t.textContent="run "+u;}
+}
+
+/* ---------- questions ---------- */
+function cur(){return{A:R.pts[G.gate],B:R.pts[G.gate+1],kind:R.kinds[G.gate],type:R.segs[G.gate].type};}
+function questionHTML(){
+  var q=cur(),A=q.A,B=q.B,n=G.gate+1,h='<p class="qtitle">Gate '+n+' of '+R.segs.length+'</p>';
+  if(q.kind==="graph")h+='<p class="qtext">Find the slope from the balloon to Gate '+n+'. Count the rise and run on the grid.</p>';
+  else if(q.kind==="points")h+='<p class="qtext">Find the slope between these two points. Use the first point minus the second point.</p><p class="pts">'+pt(A)+' and '+pt(B)+'<small>First point: the balloon. Second point: Gate '+n+'.</small></p>';
+  else{
+    h+='<p class="qtext">Find the slope for the highlighted rows. Use top row minus bottom row.</p><table class="xy" aria-label="Route table"><thead><tr><th></th><th>x</th><th>y</th></tr></thead><tbody>';
+    R.pts.forEach(function(p,i){h+='<tr'+(i===G.gate||i===G.gate+1?' class="hl"':'')+'><td class="nm">'+(i===0?"Start":"Gate "+i)+(i===G.gate?" (balloon)":"")+'</td><td>'+mn(p.x)+'</td><td>'+mn(p.y)+'</td></tr>';});
+    h+='</tbody></table>';
+  }
+  return h;
+}
+function diagnose(q,ans){
+  var r=q.B.y-q.A.y,u=q.B.x-q.A.x,c=reduce(r,u),ctx=q.kind;
+  if(c.undef){if(!ans.undef&&ans.n===0)return "The gate is straight above you, so the run is 0. That slope is undefined, not 0.";return "The gate is straight above you. The run is 0, so the slope is undefined.";}
+  if(ans.undef){if(c.n===0)return "The gate is straight ahead, not straight up. The rise is 0, so m = 0.";return "Undefined is only for a path straight up. This gate is to the right, so the run is not 0.";}
+  if(c.n===0)return "The gate is at the same height as the balloon. The rise is 0, so m = 0.";
+  if(same(ans,reduce(u,r)))return "Your fraction is flipped. Slope is rise over run.";
+  if(same(ans,reduce(-r,u))){
+    if(ctx==="graph")return r<0?"Check the sign. The gate is lower, so the rise is negative.":"Check the sign. The gate is higher, so the rise is positive.";
+    return "Check your signs. Subtract in the same order on top and bottom: "+(ctx==="table"?"top row minus bottom row":"first point minus second point")+".";
+  }
+  if(same(ans,reduce(-u,r)))return "Two things to check: slope is rise over run, and check the sign.";
+  for(var k=-1;k<=1;k+=2){if(same(ans,reduce(r+k,u))||same(ans,reduce(r,u+k)))return ctx==="graph"?"Close! Recount the grid squares for the rise and run.":"Close! Recheck your subtraction.";}
+  if(ctx==="graph")return "From the balloon, count up or down to the gate\u2019s level. That\u2019s the rise. Then count right to the gate. That\u2019s the run. m = rise/run.";
+  return ctx==="table"?"Rise = top y \u2212 bottom y and run = top x \u2212 bottom x. Then m = rise/run.":"Rise = first y \u2212 second y and run = first x \u2212 second x. Then m = rise/run.";
+}
+function solutionHTML(q){
+  var A=q.A,B=q.B,r=B.y-A.y,u=B.x-A.x;
+  if(q.kind==="graph"){
+    if(u===0)return '<ol><li>The gate is straight above the balloon.</li><li>Rise = '+mn(r)+', run = 0.</li><li>m = '+mExpr(r,0)+'</li></ol>';
+    if(r===0)return '<ol><li>The gate is straight ahead, at the same height.</li><li>Rise = 0, run = '+u+'.</li><li>m = '+mExpr(0,u)+'</li></ol>';
+    return '<ol><li>From the balloon at '+pt(A)+', count '+(r>0?"up ":"down ")+Math.abs(r)+'. Rise = '+mn(r)+'.</li><li>Count right '+u+' to the gate. Run = '+u+'.</li><li>m = '+mExpr(r,u)+'</li></ol>';
+  }
+  var how=q.kind==="table"?"top row minus bottom row":"first point minus second point",r2=A.y-B.y,u2=A.x-B.x;
+  return '<ol><li>Use '+how+'.</li><li>Rise = '+mn(A.y)+' \u2212 '+paren(B.y)+' = '+mn(r2)+'</li><li>Run = '+mn(A.x)+' \u2212 '+paren(B.x)+' = '+mn(u2)+'</li><li>m = '+mExpr(r2,u2)+'</li></ol>';
+}
+
+/* ---------- sound ---------- */
+var actx=null,soundOn=false,musicOn=false,mus=null,MUSIC_VOL=0.42,MUSIC_PAUSED=0.13;
+function ac(){actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume();return actx;}
+function tones(fs,dur,type){
+  if(!soundOn)return;
+  try{ac();var t0=actx.currentTime;fs.forEach(function(f,i){var o=actx.createOscillator(),g=actx.createGain();o.type=type||"triangle";o.frequency.value=f;
+    var st=t0+i*0.09;g.gain.setValueAtTime(0.0001,st);g.gain.exponentialRampToValueAtTime(0.2,st+0.01);g.gain.exponentialRampToValueAtTime(0.0001,st+(dur||0.15));
+    o.connect(g);g.connect(actx.destination);o.start(st);o.stop(st+(dur||0.15)+0.02);});}catch(e){}
+}
+function hz(n){return 440*Math.pow(2,(n-69)/12);}
+var noiseBuf=null;
+function noise(){if(!noiseBuf){noiseBuf=actx.createBuffer(1,actx.sampleRate*0.3,actx.sampleRate);var d=noiseBuf.getChannelData(0);for(var i=0;i<d.length;i++)d[i]=Math.random()*2-1;}return noiseBuf;}
+function voice(type,f,t,a,hold,rel,peak,dest,detune){var o=actx.createOscillator(),g=actx.createGain();o.type=type;o.frequency.value=f;if(detune)o.detune.value=detune;
+  g.gain.setValueAtTime(0.0001,t);g.gain.linearRampToValueAtTime(peak,t+a);g.gain.setValueAtTime(peak,t+a+hold);g.gain.exponentialRampToValueAtTime(0.0001,t+a+hold+rel);
+  o.connect(g);g.connect(dest);o.start(t);o.stop(t+a+hold+rel+.05);}
+function snare(t,peak,dest){var s=actx.createBufferSource(),f=actx.createBiquadFilter(),g=actx.createGain();s.buffer=noise();f.type="highpass";f.frequency.value=1800;
+  g.gain.setValueAtTime(peak,t);g.gain.exponentialRampToValueAtTime(.0001,t+.12);s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+.14);}
+function bump(){if(!soundOn)return;try{ac();var t=actx.currentTime;voice("sine",110,t,.005,0,.25,.35,actx.destination);snare(t,.25,actx.destination);}catch(e){}}
+/* background music, made live with Web Audio (no files):
+   Routes 1, 3, 5: Harvest Hoedown.  Routes 2, 4: Brass Fanfare. */
+function hit(t,peak,dest,freq,dec){var s=actx.createBufferSource(),f=actx.createBiquadFilter(),g=actx.createGain();s.buffer=noise();f.type="highpass";f.frequency.value=freq||1800;
+  g.gain.setValueAtTime(peak,t);g.gain.exponentialRampToValueAtTime(.0001,t+(dec||.12));s.connect(f);f.connect(g);g.connect(dest);s.start(t);s.stop(t+(dec||.12)+.02);}
+function kick(t,peak,dest){var o=actx.createOscillator(),g=actx.createGain();o.type="sine";o.frequency.setValueAtTime(130,t);o.frequency.exponentialRampToValueAtTime(50,t+.16);
+  g.gain.setValueAtTime(peak,t);g.gain.exponentialRampToValueAtTime(.0001,t+.28);o.connect(g);g.connect(dest);o.start(t);o.stop(t+.3);}
+function musInit(){
+  if(mus)return;ac();mus={cur:null};
+  mus.comp=actx.createDynamicsCompressor();mus.comp.threshold.value=-14;mus.comp.ratio.value=4;mus.comp.connect(actx.destination);
+  mus.out=actx.createGain();mus.out.gain.value=0;mus.out.connect(mus.comp);
+}
+function newBus(delayTime,feedback,wet,cutoff,level){
+  var b={};b.g=actx.createGain();b.g.gain.value=0;b.g.gain.setTargetAtTime(level||1,actx.currentTime,.4);b.g.connect(mus.out);
+  b.in=actx.createGain();b.in.connect(b.g);
+  b.delay=actx.createDelay(2);b.delay.delayTime.value=delayTime;b.fb=actx.createGain();b.fb.gain.value=feedback;b.wet=actx.createGain();b.wet.gain.value=wet;
+  b.in.connect(b.delay);b.delay.connect(b.fb);b.fb.connect(b.delay);b.delay.connect(b.wet);b.wet.connect(b.g);
+  b.lp=actx.createBiquadFilter();b.lp.type="lowpass";b.lp.frequency.value=cutoff;b.lp.Q.value=.6;b.lp.connect(b.in);
+  b.kill=function(){var t=actx.currentTime;b.g.gain.cancelScheduledValues(t);b.g.gain.setTargetAtTime(0,t,.3);setTimeout(function(){try{b.g.disconnect();}catch(e){}},3000);};
+  return b;
+}
+function mSeq(stepDur,onStep){var next=actx.currentTime+.12,step=0;var id=setInterval(function(){while(next<actx.currentTime+.4){onStep(step,next);step++;next+=stepDur;}},50);return function(){clearInterval(id);};}
+var TRACKS={
+  hoedown:function(){var b=newBus(.18,.12,.1,3200,1),st=.17;
+    var MEL=[[74,null,71,72,74,76],[74,null,71,67,null,71],[72,null,69,72,76,74],[72,null,69,66,null,69],[67,71,74,79,null,78],[76,null,72,76,null,74],[72,null,71,69,null,66],[67,null,null,67,null,null]];
+    var CH=[[55,59,62],[55,59,62],[57,60,64],[50,54,57],[55,59,62],[48,52,55],[50,54,57],[55,59,62]];
+    var stop=mSeq(st,function(s,t){var bar=Math.floor(s/6)%8,q=s%6,n=MEL[bar][q],ch=CH[bar];
+      if(n){voice("sawtooth",hz(n),t,.03,st*.7,.08,.07,b.lp,4);voice("sawtooth",hz(n),t,.03,st*.7,.08,.05,b.lp,-6);}
+      if(q===0||q===3){ch.forEach(function(c,i){voice("triangle",hz(c+12),t+i*.015,.004,0,.35,.08,b.lp);});voice("triangle",hz((q===0?ch[0]:ch[2])-12),t,.005,.05,.25,.28,b.lp);}
+      if(q===1||q===4)hit(t,.07,b.g,5000,.05);});
+    return function(){stop();b.kill();};},
+  fanfare:function(){var b=newBus(.22,.15,.12,2000,.8),e8=60/128/2;
+    var MEL=[[70,null,70,72,74,null,77,null],[75,null,74,null,72,70,67,null],[72,null,72,74,77,null,74,72],[70,null,null,null,65,null,70,null]];
+    var CH=[[58,62,65],[63,67,70],[65,69,72],[58,62,65]];
+    var stop=mSeq(e8,function(s,t){var bar=Math.floor(s/8)%4,q=s%8,n=MEL[bar][q],ch=CH[bar];
+      if(n){voice("sawtooth",hz(n),t,.03,e8*.7,.1,.08,b.lp);voice("square",hz(n),t,.03,e8*.7,.1,.025,b.lp);}
+      if(q===0||q===3||q===6)ch.forEach(function(c){voice("sawtooth",hz(c),t,.02,e8*.5,.12,.04,b.lp);});
+      if(q===0||q===4)kick(t,.45,b.g);
+      if(q===2||q===6)hit(t,.22,b.g);
+      if(bar===3&&q>=5)hit(t+e8/2,.12,b.g);
+      if(q%2===0)voice("triangle",hz(ch[0]-12),t,.01,e8*.8,.1,.22,b.lp);});
+    return function(){stop();b.kill();};}
+};
+function updateMusic(){
+  var want=musicOn&&G&&G.running;
+  if(want){musInit();var id=trackFor(G.chunk);
+    if(!mus.cur||mus.cur.id!==id){if(mus.cur)mus.cur.stop();mus.cur={id:id,stop:TRACKS[id]()};}
+    var v=(overlay==="pause"||overlay==="help")?MUSIC_PAUSED:MUSIC_VOL;mus.out.gain.setTargetAtTime(v,actx.currentTime,.25);}
+  else if(mus){mus.out.gain.setTargetAtTime(0,actx.currentTime,.4);if(mus.cur){mus.cur.stop();mus.cur=null;}}
+}
+
+/* ================= Flight School: chunked lessons ================= */
+var CHUNKS=[
+ {name:"Rise and Run",kind:"graph",level:3,types:function(){return ["pos","pos","pos","pos","pos"];},
+  skill:"Count the rise and run on a graph and write m = rise/run.",
+  learn:'<p><b>Slope</b> tells how steep the balloon\u2019s path is. We write it as <b><i>m</i></b>.</p><p>From the balloon, the <b class="rc">rise</b> is how far you go <b>up</b> to reach the gate\u2019s level. The <b class="uc">run</b> is how far you go <b>right</b> to reach the gate.</p><p class="key"><i>m</i> = rise / run</p>'},
+ {name:"Going Down",kind:"graph",level:3,types:function(){return ["neg","neg","neg","neg",pick(["pos","neg"])];},
+  skill:"Use a negative rise when the gate is lower than the balloon.",
+  learn:'<p>When the gate is <b>lower</b> than the balloon, you count <b>down</b>. Counting down makes the <b class="rc">rise</b> negative.</p><p>The <b class="uc">run</b> still goes right, so it stays positive.</p><p class="key">negative rise \u00F7 positive run = negative slope</p><p>A negative slope goes down from left to right.</p>'},
+ {name:"Flat and Straight Up",kind:"graph",level:3,types:function(){return ["zero","undef","zero","undef",pick(["pos","neg"])];},
+  skill:"Tell a zero slope from an undefined slope.",
+  learn:'<p>Some gates are at the <b>same height</b> as the balloon. The rise is 0, and 0 \u00F7 any number is 0, so <b><i>m</i> = 0</b>.</p><p>Some gates are <b>straight above</b> the balloon. The run is 0, and you can\u2019t divide by 0, so the slope is <b>undefined</b>.</p><p class="key">rise is 0 \u2192 m = 0 &nbsp;|&nbsp; run is 0 \u2192 undefined</p>'},
+ {name:"Two Points",kind:"points",level:3,types:function(){return ["pos","neg",pick(["pos","neg"]),pick(["pos","neg"]),pick(["zero","undef"])];},
+  skill:"Find slope from two points using first point minus second point.",
+  learn:'<p>Sometimes you only get <b>two points</b>: the balloon and the gate. Subtract to find the rise and run.</p><p>Use the <b>first point minus the second point</b> for both.</p><p class="key">Rise = first y \u2212 second y &nbsp;|&nbsp; Run = first x \u2212 second x</p><p>Then <i>m</i> = rise / run. Two negatives make a positive.</p>'},
+ {name:"Route Tables",kind:"table",level:3,types:function(){return ["neg","pos",pick(["pos","neg"]),pick(["zero","undef"]),pick(["pos","neg"])];},
+  skill:"Find slope from a table using top row minus bottom row.",
+  learn:'<p>A <b>route table</b> lists the points in order. Look at the two <b>highlighted rows</b>.</p><p>Subtract <b>top row minus bottom row</b>, the same way in both columns.</p><p class="key">Rise = top y \u2212 bottom y &nbsp;|&nbsp; Run = top x \u2212 bottom x</p>'},
+ {name:"Grand Finale",kind:"mixed",level:5,types:function(){return shuffle(["pos","neg","zero","undef","pos","neg",pick(["zero","undef"])]);},
+  skill:"Find any slope from a graph, two points, or a table.",
+  learn:'<p>Time to put it all together. Each gate could be a <b>graph</b>, <b>two points</b>, or a <b>table</b>, with any type of slope.</p><p>There\u2019s no step-by-step help on this route, but you still get a hint if you miss.</p><p class="key">Graph: count &nbsp;|&nbsp; Two points: first \u2212 second &nbsp;|&nbsp; Table: top \u2212 bottom</p>'}
+];
+function genChunkRoute(ci){
+  var c=CHUNKS[ci];
+  for(var attempt=0;attempt<2000;attempt++){
+    var types=c.types(),P={x:1,y:ri(1,8)},pts=[P],segs=[],ok=true,dxMax=types.length>5?3:4;
+    for(var i=0;i<types.length;i++){
+      var t=types[i],A=pts[pts.length-1],B;
+      if(t==="zero")B={x:A.x+ri(3,dxMax),y:A.y};
+      else if(t==="undef")B={x:A.x,y:A.y+ri(2,3)};
+      else{
+        var opts=SLOPES.filter(function(s){return s[1]<=dxMax;}),s=pick(opts),k=1;
+        while(s[1]*(k+1)<=dxMax&&s[0]*(k+1)<=4&&Math.random()<.5)k++;
+        var dx=s[1]*k,dy=s[0]*k;if(dx<2&&s[1]===1&&s[0]*2<=4){dx*=2;dy*=2;}
+        B={x:A.x+dx,y:A.y+(t==="pos"?dy:-dy)};
+      }
+      if(B.y<1||B.y>9||B.x>19){ok=false;break;}
+      pts.push(B);segs.push({a:A,b:B,type:t});
+    }
+    if(!ok)continue;
+    var obs=buildObstacles(c.level,segs);if(!obs)continue;
+    var kinds=c.kind==="mixed"?shuffle(["graph","graph","points","points","table","table",pick(["graph","points","table"])]).slice(0,segs.length):segs.map(function(){return c.kind;});
+    return{name:c.name,pts:pts,segs:segs,obs:obs,kinds:kinds,decor:decor()};
+  }
+  return null;
+}
+function trackFor(chunk){return chunk%2===0?"hoedown":"fanfare";}
+
+/* ---------- state ---------- */
+var G=null,R=null,overlay=null,busy=false;
+var qbox=$("#qbox"),fieldsEl=$("#fields"),inputs=[],active=0,mode="none";
+function newGame(){return{running:true,chunk:0,gate:0,tanks:3,lost:0,score:0,chunkScore:0,ownScore:0,stars:[],missed:[],tries:0,lastMiss:null,helpErr:0,step:0};}
+function phaseOf(g){return G.chunk===CHUNKS.length-1?"own":g===0?"watch":g<=2?"help":"own";}
+function hud(){
+  $("#hRoute").textContent="Section "+(G.chunk+1)+" of "+CHUNKS.length+": "+CHUNKS[G.chunk].name;
+  $("#hGate").textContent="Gate "+Math.min(G.gate+1,R.segs.length)+" of "+R.segs.length;
+  $("#hScore").textContent=G.score;
+  var t=$("#hTanks");t.innerHTML="";
+  for(var i=0;i<3;i++){var full=i<G.tanks;t.insertAdjacentHTML("beforeend",'<svg width="14" height="20" viewBox="0 0 14 20" aria-hidden="true"><rect x="4" y="0" width="6" height="3" rx="1" fill="var(--muted)"></rect><rect x="1" y="3" width="12" height="16" rx="4" fill="'+(full?"var(--accent)":"none")+'" stroke="var(--accent)" stroke-width="2"></rect></svg>');}
+  t.setAttribute("aria-label",G.tanks+(G.tanks===1?" tank":" tanks")+" of helium left");
+  $("#hHelium").classList.toggle("dim",mode!=="own");
+}
+function stepper(cur){
+  var names=G.chunk===CHUNKS.length-1?[["learn","Learn"],["own","On your own"]]:[["learn","Learn"],["watch","Watch"],["help","Try with help"],["own","On your own"]];
+  var idx=names.map(function(n){return n[0];}).indexOf(cur);
+  return '<ol class="stepper" aria-label="Lesson steps">'+names.map(function(n,i){var st=i<idx?"done":i===idx?"now":"";return '<li class="'+st+'"'+(i===idx?' aria-current="step"':'')+'>'+(i<idx?"\u2713 ":"")+n[1]+'</li>';}).join("")+'</ol>';
+}
+
+/* ---------- answer fields and keypad ---------- */
+var KEYS=[["7"],["8"],["9"],["/"],["4"],["5"],["6"],["\u2212","-"],["1"],["2"],["3"],["\u232B","del"],["0"],["undefined","undef","wide"],["Fly","go"]];
+KEYS.forEach(function(k){
+  var b=document.createElement("button");b.type="button";b.className="key"+(k[2]?" "+k[2]:"")+(k[1]==="go"?" fly":"");b.textContent=k[0];
+  var v=k[1]||k[0];b.setAttribute("aria-label",v==="del"?"Delete":v==="-"?"Negative sign":v==="undef"?"undefined":v==="go"?"Check or fly":v);
+  if(v==="go")b.id="goKey";
+  b.addEventListener("mousedown",function(e){e.preventDefault();});
+  b.addEventListener("click",function(){keyPress(v);});
+  $("#keys").appendChild(b);
+});
+function setKeys(on){Array.prototype.forEach.call($("#keys").children,function(b){b.disabled=!on;});}
+function renderFields(m,labels){
+  mode=m;fieldsEl.innerHTML="";inputs=[];active=0;
+  if(m==="none"||m==="watch"){fieldsEl.innerHTML='<p class="padnote">'+(m==="watch"?"Watch the example on the left. The keypad opens when it\u2019s your turn.":"Read the lesson on the left first.")+'</p>';setKeys(false);hud();return;}
+  labels.forEach(function(l,i){
+    var row=document.createElement("div");row.className="inrow";
+    row.innerHTML='<label for="f'+i+'">'+l+'</label><input id="f'+i+'" type="text" autocomplete="off" spellcheck="false" inputmode="none"><span class="st" aria-hidden="true"></span>';
+    fieldsEl.appendChild(row);
+    var inp=row.querySelector("input");inputs.push(inp);
+    inp.addEventListener("focus",function(){if(!inp.readOnly){active=i;markActive();}});
+    inp.addEventListener("keydown",function(e){
+      if(e.key==="Enter"){e.preventDefault();submit();}
+      else if((e.key==="u"||e.key==="U")&&i===inputs.length-1){e.preventDefault();inp.value="undefined";}
+    });
+  });
+  $("#goKey").textContent=m==="help"?"Check":"Fly";
+  setKeys(true);markActive();hud();
+}
+function markActive(){inputs.forEach(function(inp,i){inp.parentNode.classList.toggle("act",i===active&&!inp.readOnly);inp.disabled=mode==="help"&&i!==active&&!inp.readOnly;});}
+function focusActive(){var inp=inputs[active];if(inp&&!overlay)setTimeout(function(){if(!overlay)inp.focus({preventScroll:true});},0);}
+function keyPress(v){
+  if(busy||overlay||!G||!G.running||!inputs.length)return;
+  if(v==="go"){submit();return;}
+  var inp=inputs[active];if(!inp||inp.readOnly)return;
+  if(v==="del")inp.value=inp.value.slice(0,-1);
+  else if(v==="undef")inp.value="undefined";
+  else{if(inp.value==="undefined")inp.value="";inp.value+=v;}
+  inp.focus({preventScroll:true});
+}
+function submit(){if(busy||overlay)return;if(mode==="help")checkHelp();else if(mode==="own")fly();}
+function fb(cls,html){var f=$("#fb");if(!f)return;f.className="fb "+cls;f.innerHTML=html;}
+
+/* ---------- drawing helpers for the lessons ---------- */
+function drawRR(A,B,showRise,showRun){
+  var g=layers.help;g.innerHTML="";var r=B.y-A.y,u=B.x-A.x,C={x:A.x,y:B.y};
+  if(showRise&&r!==0){S("line",{x1:X(A.x),y1:Y(A.y),x2:X(C.x),y2:Y(C.y)+(r>0?6:-6),class:"rr","marker-end":"url(#mr)"},g);
+    var t=S("text",{x:X(A.x)-8,y:(Y(A.y)+Y(C.y))/2+4,class:"lab r","text-anchor":"end"},g);t.textContent="rise "+mn(r);}
+  if(showRun&&u!==0){S("line",{x1:X(C.x),y1:Y(C.y),x2:X(B.x)-6,y2:Y(B.y),class:"ru","marker-end":"url(#mu)"},g);
+    t=S("text",{x:(X(C.x)+X(B.x))/2,y:Y(C.y)+(r>=0?-10:20),class:"lab u","text-anchor":"middle"},g);t.textContent="run "+u;}
+}
+function expected(q){
+  var r=q.B.y-q.A.y,u=q.B.x-q.A.x;
+  if(q.kind==="graph")return{rise:r,run:u};
+  return{rise:q.A.y-q.B.y,run:q.A.x-q.B.x};
+}
+
+/* ---------- flow ---------- */
+function startAt(ci){hideOv();G=newGame();loadChunk(ci,null);updateMusic();}
+function loadChunk(ci,keep){
+  G.chunk=ci;G.gate=0;G.tanks=3;G.lost=0;G.chunkScore=0;G.ownScore=0;
+  R=keep||genChunkRoute(ci);drawMap();learn();updateMusic();
+}
+function learn(){
+  busy=false;layers.help.innerHTML="";layers.miss.innerHTML="";drawGates();placeBalloon(R.pts[0]);
+  var c=CHUNKS[G.chunk],fin=G.chunk===CHUNKS.length-1;
+  qbox.innerHTML=stepper("learn")+'<p class="qtitle">Section '+(G.chunk+1)+': '+c.name+'</p><div class="learn">'+c.learn+'</div>'+
+    '<div class="row"><button type="button" class="btn" id="goW">'+(fin?"Start flying":"Watch an example")+'</button></div>';
+  renderFields("none");
+  var b=$("#goW");b.addEventListener("click",startGate);setTimeout(function(){if(!overlay)b.focus({preventScroll:true});},0);
+}
+function startGate(){
+  G.tries=0;G.lastMiss=null;G.helpErr=0;G.step=0;busy=false;
+  layers.help.innerHTML="";layers.miss.innerHTML="";drawGates();placeBalloon(R.pts[G.gate]);
+  var ph=phaseOf(G.gate);
+  if(ph==="watch")watch();else if(ph==="help")help();else own();
+}
+function watchSteps(q){
+  var A=q.A,B=q.B,r=B.y-A.y,u=B.x-A.x,s=[];
+  if(q.kind==="graph"){
+    if(u===0)s=[["The gate is straight above the balloon.",0,0],["Count up "+r+" to the gate. Rise = "+mn(r)+".",1,0],["You don\u2019t move right at all. Run = 0.",1,0],["m = "+mExpr(r,0)+". You can\u2019t divide by 0.",1,0]];
+    else if(r===0)s=[["The gate is straight ahead, at the same height.",0,0],["You don\u2019t go up or down. Rise = 0.",0,0],["Count right "+u+" to the gate. Run = "+u+".",0,1],["m = "+mExpr(0,u)+". A flat path has a slope of 0.",0,1]];
+    else s=[["Start at the balloon at "+pt(A)+".",0,0],["Count "+(r>0?"up ":"down ")+Math.abs(r)+" to the gate\u2019s level. Rise = "+mn(r)+(r<0?" (down is negative).":"."),1,0],["Count right "+u+" to the gate. Run = "+u+".",1,1],["m = rise / run = "+mExpr(r,u)+".",1,1]];
+  }else{
+    var w1=q.kind==="table"?"top row":"first point",w2=q.kind==="table"?"bottom row":"second point",r2=A.y-B.y,u2=A.x-B.x;
+    s=[["The "+w1+" is the balloon "+pt(A)+". The "+w2+" is Gate "+(G.gate+1)+" "+pt(B)+".",0,0],
+       ["Rise = "+(q.kind==="table"?"top y \u2212 bottom y":"first y \u2212 second y")+" = "+mn(A.y)+" \u2212 "+paren(B.y)+" = "+mn(r2)+".",0,0],
+       ["Run = "+(q.kind==="table"?"top x \u2212 bottom x":"first x \u2212 second x")+" = "+mn(A.x)+" \u2212 "+paren(B.x)+" = "+mn(u2)+".",0,0],
+       ["m = rise / run = "+mExpr(r2,u2)+"."+(r2<0&&u2<0?" Two negatives make a positive.":""),0,0]];
+  }
+  return s;
+}
+function watch(){
+  renderFields("watch");
+  var q=cur(),steps=watchSteps(q),shown=0;
+  qbox.innerHTML=stepper("watch")+'<p class="qtitle">Watch: Gate 1</p>'+questionHTML().replace(/<p class="qtitle">[^<]*<\/p>/,"")+'<ol class="wsteps" id="ws"></ol><div class="row"><button type="button" class="btn" id="wNext">Show step 1</button></div>';
+  var btn=$("#wNext"),ol=$("#ws");
+  btn.addEventListener("click",function(){
+    if(shown<steps.length){
+      var st=steps[shown];var li=document.createElement("li");li.innerHTML=st[0];ol.appendChild(li);
+      if(q.kind==="graph")drawRR(q.A,q.B,st[1],st[2]);
+      shown++;btn.textContent=shown<steps.length?"Show step "+(shown+1):"Fly through the gate";
+    }else{btn.disabled=true;busy=true;layers.help.innerHTML="";animate(q.A,q.B,function(){tones([784,988,1175],0.14);passGate();});}
+  });
+  setTimeout(function(){if(!overlay)btn.focus({preventScroll:true});},0);
+}
+function help(){
+  var q=cur(),lab;
+  if(q.kind==="graph")lab=['<span class="rc">Rise</span> <small>(up +, down \u2212)</small>','<span class="uc">Run</span> <small>(to the right)</small>','<i>m</i> = <small>rise/run</small>'];
+  else if(q.kind==="points")lab=['<span class="rc">Rise</span> <small>= y\u2081 \u2212 y\u2082</small>','<span class="uc">Run</span> <small>= x\u2081 \u2212 x\u2082</small>','<i>m</i> = <small>rise/run</small>'];
+  else lab=['<span class="rc">Rise</span> <small>= top y \u2212 bottom y</small>','<span class="uc">Run</span> <small>= top x \u2212 bottom x</small>','<i>m</i> = <small>rise/run</small>'];
+  renderFields("help",lab);
+  qbox.innerHTML=stepper("help")+'<p class="qtitle">Try with help: Gate '+(G.gate+1)+' of '+R.segs.length+'</p><p class="qtext">Find it one step at a time on the right: rise, then run, then <i>m</i>. Press <b>Check</b> after each one.</p>'+questionHTML().replace(/<p class="qtitle">[^<]*<\/p>/,"").replace(/<p class="qtext">[^<]*<\/p>/,"")+'<div class="fb" id="fb"></div>';
+  focusActive();
+}
+function helpHint(q,step,v){
+  var e=expected(q),gr=q.kind==="graph";
+  if(step===0){
+    if(gr){if(q.B.x===q.A.x&&v===0)return "The gate is straight above you, so you do go up. Count the squares up to the gate.";
+      if(e.rise===0)return "The gate is at the same height as the balloon. You don\u2019t go up or down, so the rise is 0.";
+      if(v===-e.rise)return e.rise<0?"Check the sign. The gate is lower, so you count down. Down is negative.":"Check the sign. The gate is higher, so you count up. Up is positive.";
+      if(v===e.run)return "That\u2019s the run. The rise is how far up or down you go.";
+      return "Count the squares from the balloon straight "+(e.rise>0?"up":"down")+" to the gate\u2019s level.";}
+    if(v===-e.rise)return "Check the order. Subtract "+(q.kind==="table"?"top y minus bottom y":"first y minus second y")+".";
+    return "Rise = "+(q.kind==="table"?"top y \u2212 bottom y":"first y \u2212 second y")+". Use the y-values and check your subtraction.";
+  }
+  if(step===1){
+    if(gr){if(e.run===0)return "The gate is straight above you. You don\u2019t move right at all, so the run is 0.";
+      if(v===-e.run)return "The run goes to the right, so it\u2019s positive.";
+      if(v===e.rise)return "That\u2019s the rise. The run is how far right you go.";
+      return "Count the squares from the balloon to the right until you reach the gate.";}
+    if(v===-e.run)return "Check the order. Subtract "+(q.kind==="table"?"top x minus bottom x":"first x minus second x")+", the same order as the rise.";
+    return "Run = "+(q.kind==="table"?"top x \u2212 bottom x":"first x \u2212 second x")+". Use the x-values and check your subtraction.";
+  }
+  if(e.run===0)return "Your run is 0, and you can\u2019t divide by 0. Type <b>undefined</b>.";
+  if(e.rise===0)return "Your rise is 0. 0 divided by any number is 0.";
+  return "<i>m</i> = rise / run = "+frac(mn(e.rise),mn(e.run))+". Type it as a fraction or simplify it.";
+}
+function checkHelp(){
+  var q=cur(),e=expected(q),inp=inputs[G.step],raw=inp.value.trim();
+  if(G.step<2){
+    var t=raw.replace(/[\u2212]/g,"-");
+    if(!/^-?\d+$/.test(t)){fb("","Type a whole number, like 3 or \u22122.");focusActive();return;}
+    var v=parseInt(t,10),want=G.step===0?e.rise:e.run;
+    if(v===want){
+      inp.readOnly=true;inp.parentNode.classList.add("ok");inp.parentNode.querySelector(".st").textContent="\u2713";
+      if(q.kind==="graph")drawRR(q.A,q.B,true,G.step===1);
+      fb("ok",'<span class="tag">\u2713 '+(G.step===0?"Rise":"Run")+' = '+mn(v)+'.</span> '+(G.step===0?"Now find the run.":"Now write <i>m</i> = rise / run."));
+      G.step++;active=G.step;markActive();focusActive();
+    }else{G.helpErr++;tones([300,240],0.12);fb("no",'<span class="tag">\u2717 Not yet.</span> '+helpHint(q,G.step,v));inp.select();}
+    return;
+  }
+  var a=parseAns(raw),c=reduce(q.B.y-q.A.y,q.B.x-q.A.x);
+  if(!a){fb("","Type a fraction like 3/2, a whole number, or the word undefined.");focusActive();return;}
+  if(same(a,c)){
+    inp.readOnly=true;inp.parentNode.classList.add("ok");inp.parentNode.querySelector(".st").textContent="\u2713";
+    var pts=G.helpErr===0?50:0;G.score+=pts;G.chunkScore+=pts;hud();
+    fb("ok",'<span class="tag">\u2713 m = '+sH(c)+'.</span> '+(pts?"+50 points for no mistakes. ":"")+"Flying through!");
+    busy=true;setKeys(false);tones([784,988,1175],0.14);layers.help.innerHTML="";
+    animate(q.A,q.B,passGate);
+  }else{
+    G.helpErr++;tones([300,240],0.12);
+    var msg=same(a,reduce(e.run,e.rise))?"Your fraction is flipped. The rise goes on top: m = rise / run.":helpHint(q,2,null);
+    fb("no",'<span class="tag">\u2717 Not yet.</span> '+msg);inp.select();
+  }
+}
+function own(){
+  renderFields("own",["<i>m</i> ="]);
+  qbox.innerHTML=stepper("own")+questionHTML().replace('<p class="qtitle">','<p class="qtitle">On your own: ')+'<div class="fb" id="fb"></div>';
+  focusActive();
+}
+function fly(){
+  if(busy||overlay||!G||!G.running)return;
+  var inp=inputs[0],a=parseAns(inp.value);
+  if(!a){fb("","Type a fraction like 3/2, a whole number like \u22124, or the word undefined.");focusActive();return;}
+  var q=cur(),correct=reduce(q.B.y-q.A.y,q.B.x-q.A.x),shown=inp.value.trim();
+  if(G.tries>0&&G.lastMiss)G.lastMiss.answers.push(shown);
+  if(same(a,correct)){
+    busy=true;setKeys(false);
+    var pts=G.tries===0?100:0;G.score+=pts;G.chunkScore+=pts;G.ownScore+=pts;
+    fb("ok",'<span class="tag">\u2713 Through the gate!</span> m = '+sH(correct)+'.'+(pts?' +'+pts+' points.':''));
+    tones([784,988,1175],0.14);hud();animate(q.A,q.B,passGate);return;
+  }
+  busy=true;setKeys(false);G.tries++;G.tanks--;G.lost++;
+  if(G.tries===1){G.lastMiss={chunk:G.chunk,gate:G.gate+1,kind:q.kind,A:q.A,B:q.B,answers:[shown],correct:sT(correct)};G.missed.push(G.lastMiss);}
+  hud();
+  var hitp=wrongFlight(q.A,a);
+  S("line",{x1:X(q.A.x),y1:Y(q.A.y),x2:X(hitp.x),y2:Y(hitp.y),class:"miss"},layers.miss);
+  animate(q.A,hitp,function(){
+    bump();var bx=S("text",{x:X(hitp.x),y:Y(hitp.y)-14,class:"lab x","text-anchor":"middle"},layers.miss);bx.textContent="\u2717 bump";
+    setTimeout(function(){animate(hitp,q.A,function(){afterMiss(a);});},reduceMotion?150:420);
+  });
+}
+function wrongFlight(A,a){
+  var dx,dy;if(a.undef){dx=0;dy=1;}else{var m=a.n/a.d,L=Math.hypot(1,m);dx=1/L;dy=m/L;}
+  var p={x:A.x,y:A.y};
+  for(var i=0;i<900;i++){var np={x:p.x+dx*0.04,y:p.y+dy*0.04};
+    if(np.y<0.35||np.y>YMAX-0.3||np.x>XMAX-0.3)return p;
+    for(var j=0;j<R.obs.length;j++){if(inRect(np,R.obs[j],0.28))return p;}
+    p=np;}
+  return p;
+}
+function afterMiss(a){
+  var q=cur();
+  if(G.tanks<=0){outOfHelium(q);return;}
+  if(G.tries===1){busy=false;setKeys(true);fb("no",'<span class="tag">\u2717 Bump!</span> You lost a helium tank. '+diagnose(q,a)+' Try again.');inputs[0].select();inputs[0].focus();}
+  else{
+    if(q.kind==="graph")drawRR(q.A,q.B,true,true);
+    fb("no",'<span class="tag">\u2717 Here\u2019s how to reach Gate '+(G.gate+1)+':</span>'+solutionHTML(q)+'<div class="row" style="margin-top:4px"><button type="button" class="btn" id="goThru">Fly through the gate</button></div>');
+    var b=$("#goThru");b.focus();b.addEventListener("click",function(){b.disabled=true;layers.help.innerHTML="";animate(q.A,q.B,passGate);});
+  }
+}
+function passGate(){G.gate++;if(G.gate>=R.segs.length){chunkComplete();return;}startGate();}
+function firstOwnGate(){return G.chunk===CHUNKS.length-1?0:3;}
+function outOfHelium(q){
+  overlay="helium";if(q.kind==="graph")drawRR(q.A,q.B,true,true);
+  showOv('<h2 id="ovT">\u2717 Out of helium</h2><p>The balloon ran out of helium. Your tanks are refilled, and you\u2019ll try the on-your-own gates again. Here\u2019s how to reach Gate '+(G.gate+1)+':</p>'+solutionHTML(q)+
+    '<div class="row"><button type="button" class="btn" id="goOn">Try again</button></div>',"#goOn");
+  $("#goOn").addEventListener("click",function(){G.score-=G.ownScore;G.chunkScore-=G.ownScore;G.ownScore=0;G.tanks=3;G.lost=0;G.gate=firstOwnGate();hideOv();startGate();});
+}
+function starsSVG(n){var s='<span class="stars" role="img" aria-label="'+n+' of 3 stars">';for(var i=0;i<3;i++)s+='<svg width="28" height="28" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2l3 6.6 7.2.8-5.4 4.9 1.5 7.1L12 17.8 5.7 21.4l1.5-7.1L1.8 9.4 9 8.6z" fill="'+(i<n?"var(--gold)":"none")+'" stroke="var(--gold)" stroke-width="1.6"></path></svg>';return s+'</span>';}
+function chunkComplete(){
+  drawGates();
+  var bonus=G.lost===0?150:0;G.score+=bonus;G.chunkScore+=bonus;
+  var st=G.lost===0?3:G.lost===1?2:1,c=CHUNKS[G.chunk],last=G.chunk===CHUNKS.length-1;
+  G.stars[G.chunk]={stars:st,score:G.chunkScore};hud();tones([523,659,784,1047],0.16);
+  overlay="chunk";
+  showOv('<h2 id="ovT">\u2713 Section '+(G.chunk+1)+' complete: '+c.name+'</h2>'+starsSVG(st)+
+    '<p style="margin-top:8px"><b>You can now:</b> '+c.skill+'</p>'+
+    '<p>Points this section: <b>'+G.chunkScore+'</b>'+(bonus?' (including a 150-point bonus for no bumps)':'')+'. Total: <b>'+G.score+'</b>.</p>'+
+    (last?'':'<p>Next up: <b>Section '+(G.chunk+2)+', '+CHUNKS[G.chunk+1].name+'</b>.</p>')+
+    '<div class="row"><button type="button" class="btn" id="goOn">'+(last?"See my results":"Go to the next section")+'</button><button type="button" class="btn ghost" id="goRe">Practice this section again</button></div>',"#goOn");
+  $("#goOn").addEventListener("click",function(){hideOv();if(last)finalScreen();else loadChunk(G.chunk+1,null);});
+  $("#goRe").addEventListener("click",function(){G.score-=G.chunkScore;hideOv();loadChunk(G.chunk,null);});
+}
+function finalScreen(){
+  G.running=false;updateMusic();overlay="final";busy=true;setKeys(false);
+  var today=new Date().toLocaleDateString(undefined,{year:"numeric",month:"long",day:"numeric"});
+  var rows=CHUNKS.map(function(c,i){var s=G.stars[i];return '<tr><td>Section '+(i+1)+': '+c.name+'</td><td>'+(s?starsSVG(s.stars):'<span>Not finished</span>')+'</td><td>'+(s?s.score+" points":"")+'</td></tr>';}).join("");
+  var miss=G.missed.map(function(m){return '<tr><td>Section '+(m.chunk+1)+', Gate '+m.gate+'</td><td>'+(m.kind==="graph"?"Graph":m.kind==="points"?"Two points":"Table")+': '+pt(m.A)+' to '+pt(m.B)+'</td><td>'+m.answers.map(function(a){return a.replace(/</g,"&lt;");}).join(", then ")+'</td><td>m = '+m.correct.replace(/-/g,"\u2212")+'</td></tr>';}).join("");
+  showOv('<h2 id="ovT">Flight School results</h2>'+
+    '<div class="field"><label for="nm">Name</label><input id="nm" type="text" autocomplete="off"></div><p>'+today+'</p>'+
+    '<div class="row" style="align-items:baseline;margin:0 0 6px"><span class="big">'+G.score+'</span><span>total points</span></div>'+
+    '<table class="sum"><tbody>'+rows+'</tbody></table>'+
+    '<h2 style="font-size:1.1rem;margin-top:12px">On-your-own gates I missed on the first try</h2>'+
+    (miss?'<div class="scroll"><table class="sum"><thead><tr><th>Gate</th><th>Path</th><th>My answers</th><th>Correct</th></tr></thead><tbody>'+miss+'</tbody></table></div>':'<p>None. Every on-your-own gate on the first try.</p>')+
+    '<p style="font-size:.88rem;margin-top:8px">Type your name, then take a screenshot or print this page to turn in your work.</p>'+
+    '<div class="row noprint"><button type="button" class="btn" id="again">Start over</button><button type="button" class="btn ghost" id="prt">Print</button></div>',"#nm");
+  $("#again").addEventListener("click",function(){hideOv();startScreen();});
+  $("#prt").addEventListener("click",function(){window.print();});
+}
+
+/* ---------- overlays ---------- */
+var ov=$("#ov"),box=$("#box");
+function showOv(html,focusSel){box.innerHTML=html;ov.classList.remove("hidden");var f=focusSel?box.querySelector(focusSel):box.querySelector("button,input");if(f)setTimeout(function(){f.focus();},0);updateMusic();}
+function hideOv(){ov.classList.add("hidden");overlay=null;box.innerHTML="";updateMusic();if(G&&G.running&&!busy)focusActive();}
+function howHTML(){
+  return '<p>Flight School guides you through <b>6 short sections</b>, in order. Each section has four steps:</p><ol>'+
+  '<li><b>Learn:</b> one new idea, explained in a few sentences.</li>'+
+  '<li><b>Watch:</b> see a worked example, one step at a time.</li>'+
+  '<li><b>Try with help:</b> find the rise, then the run, then <i>m</i>. Press <b>Check</b> after each one. Mistakes here don\u2019t cost helium.</li>'+
+  '<li><b>On your own:</b> type <i>m</i> and press <b>Fly</b>. A wrong slope bumps the balloon and costs a helium tank.</li></ol>'+
+  '<p>Type with the keypad or your keyboard. Press <kbd>Enter</kbd> to check or fly, and <kbd>U</kbd> for <i>undefined</i>.</p>';
+}
+function startScreen(){
+  overlay="start";
+  var list=CHUNKS.map(function(c,i){return '<li><button type="button" class="chunkbtn" data-c="'+i+'"><b>'+(i+1)+'. '+c.name+'</b><span>'+c.skill+'</span></button></li>';}).join("");
+  showOv('<h1 id="ovT">Parade Balloon Pilot: Flight School</h1><p>Learn to steer the Thanksgiving turkey balloon by slope, one step at a time.</p>'+howHTML()+
+    '<h2 style="font-size:1.1rem">The sections</h2><ol class="chunks">'+list+'</ol><p class="muted" style="font-size:.88rem">The sections go in order, and each one builds on the last. To review, you can jump to any section.</p>'+
+    '<div class="row" style="margin-top:0"><button type="button" class="btn ghost" id="sMusic" aria-pressed="'+musicOn+'">Music: '+(musicOn?"on":"off")+'</button><button type="button" class="btn ghost" id="sSound" aria-pressed="'+soundOn+'">Sound effects: '+(soundOn?"on":"off")+'</button></div>'+
+    '<div class="row"><button type="button" class="btn" id="goStart">Start the first section</button></div>',"#goStart");
+  function go(i){if(musicOn||soundOn){try{ac();}catch(e){}}startAt(i);}
+  $("#goStart").addEventListener("click",function(){go(0);});
+  Array.prototype.forEach.call(box.querySelectorAll(".chunkbtn"),function(b){b.addEventListener("click",function(){go(+b.getAttribute("data-c"));});});
+  $("#sMusic").addEventListener("click",function(){setMusic(!musicOn);});
+  $("#sSound").addEventListener("click",function(){setSound(!soundOn);});
+}
+function helpScreen(){
+  if(!G||!G.running||overlay)return;overlay="help";
+  showOv('<h2 id="ovT">How Flight School works</h2>'+howHTML()+'<div class="row"><button type="button" class="btn" id="goBack">Back to the lesson</button></div>',"#goBack");
+  $("#goBack").addEventListener("click",hideOv);
+}
+function pauseScreen(){
+  if(!G||!G.running||overlay)return;overlay="pause";
+  var clone=map.cloneNode(true);clone.removeAttribute("id");
+  var showQ=mode!=="none";
+  showOv('<h2 id="ovT">Paused</h2><div class="mini" id="mini"></div>'+(showQ?'<div style="margin-top:8px">'+questionHTML()+'</div>':'<div class="learn" style="margin-top:8px">'+CHUNKS[G.chunk].learn+'</div>')+
+    '<div class="row"><button type="button" class="btn" id="goBack">Resume</button><button type="button" class="btn ghost" id="goEnd">End and see results</button></div>',"#goBack");
+  $("#mini").appendChild(clone);
+  $("#goBack").addEventListener("click",hideOv);
+  $("#goEnd").addEventListener("click",function(){hideOv();finalScreen();});
+}
+function setMusic(v){musicOn=v;[["#bMusic","Music: "],["#sMusic","Music: "]].forEach(function(p){var b=$(p[0]);if(b){b.textContent=p[1]+(v?"on":"off");b.setAttribute("aria-pressed",String(v));}});try{ac();}catch(e){}updateMusic();}
+function setSound(v){soundOn=v;[["#bSound","Sound: "],["#sSound","Sound effects: "]].forEach(function(p){var b=$(p[0]);if(b){b.textContent=p[1]+(v?"on":"off");b.setAttribute("aria-pressed",String(v));}});if(v)tones([660],0.08);}
+$("#bHelp").addEventListener("click",helpScreen);
+$("#bPause").addEventListener("click",pauseScreen);
+$("#bMusic").addEventListener("click",function(){setMusic(!musicOn);});
+$("#bSound").addEventListener("click",function(){setSound(!soundOn);});
+document.addEventListener("keydown",function(e){
+  if(overlay==="help"||overlay==="pause"){if(e.key==="Escape"){e.preventDefault();hideOv();}return;}
+  var inField=e.target&&e.target.tagName==="INPUT";
+  if(!overlay&&G&&G.running&&(e.key==="Escape"||((e.key==="p"||e.key==="P")&&!inField))){e.preventDefault();pauseScreen();}
+});
+
+/* first screen */
+G=newGame();G.running=false;R=genChunkRoute(0);drawMap();hud();
+qbox.innerHTML='<p class="qtitle">Welcome to Flight School</p><p class="qtext">Press Start to begin.</p>';renderFields("none");
+startScreen();
+})();
+</script>
+</body>
+</html>
